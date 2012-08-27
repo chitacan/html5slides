@@ -10,18 +10,29 @@
   URL: http://code.google.com/p/html5slides/
 */
 
+// svn에서 몇몇 소스를 가져오기 위해 사용되는 상수. 나에겐 필요없음
 var PERMANENT_URL_PREFIX = 'http://html5slides.googlecode.com/svn/trunk/';
 
+// slide 클래스의 종류를 `far-past`, `past`, `current`, `next`, `far-next`로 나눔
 var SLIDE_CLASSES = ['far-past', 'past', 'current', 'next', 'far-next'];
 
+// 터치 계산시 사용됨
 var PM_TOUCH_SENSITIVITY = 15;
 
+// 현재 슬라이드의 인덱스를 나타냄
 var curSlide;
 
 /* ---------------------------------------------------------------------- */
 /* classList polyfill by Eli Grey 
  * (http://purl.eligrey.com/github/classList.js/blob/master/classList.js) */
 
+
+// 아래 두 조건이 참이면 진행 (크롬에선 타지 않으며, IE를 위한 코드임 ㄷ)
+// 
+// * `docuemnt` 가 선언되어 있지 **않고**,
+// * `<a></a>`를 하나 만들고 거기에 `classList` 가 선언되어 있지 **않은지** 확인
+//  * 사실 이건 왜 하는지 잘 모르겠음
+//  * 크롬 콘솔에서 `console.dir(document.createElement("a"))` 확인해 보면 `classList` 를 확인할 수 있다.
 if (typeof document !== "undefined" && !("classList" in document.createElement("a"))) {
 
 (function (view) {
@@ -138,9 +149,6 @@ if (objCtr.defineProperty) {
 }(self));
 
 }
-/* ---------------------------------------------------------------------- */
-
-/* Slide movement */
 
 function getSlideEl(no) {
   if ((no < 0) || (no >= slideEls.length)) { 
@@ -150,6 +158,9 @@ function getSlideEl(no) {
   }
 };
 
+// `slideNo`에 해당하는 슬라이드를 가져와, `className`이 있으면, 앨리먼트에 붙인다.
+// `className`이 미리정의된 이름이 아닐경우 앨리먼트에서 제거.
+// 앨리먼트에 `className`이 적용되는 순간 매치된 css에 의해 애니메이션이 실행된다.
 function updateSlideClass(slideNo, className) {
   var el = getSlideEl(slideNo);
   
@@ -168,6 +179,25 @@ function updateSlideClass(slideNo, className) {
   }
 };
 
+// 현재 슬라이드를 가준으로 앨리먼트의 클래스를
+// 
+// * -2 : `far-past`
+// * -1 : `past`
+// * 0 (현재 슬라이드) : `current`
+// * +1 : `next`
+// * +2 : `far-next`
+// 
+// 로 설정한다.
+// (*이 부분 좀 이상함. 앞뒤 슬라이드 앨리먼트 몇개만 업뎃치면 되는디 전부 다 돌면서 업뎃*)
+// 
+// 이 메소드가 호출되는 시점에 `curSlide`는 이미 다음에 화면에 보여질 슬라이드를 가리키고 있음.
+// 
+// * 따라서 `curSlide - 1`이 현재 화면에 보여지고 있는 슬라이드.
+// * `curSlide - 1` 슬라이드에 대해 `onslideleave` 이벤트 emit.
+// * `curSlide` 슬라이드에 대해 `onslideenter` 이벤트 emit.
+// * 0.3 초 후에 `curSlide - 2` 슬라이드에 대해 `disableSlideFrames` 메소드 호출.
+// * `curSlide - 1`, `curSlide + 2` 슬라이드에 대해 'enableSlideFrames' 메소드 호출.
+// * 현재 location 의 해쉬값을 업데이트
 function updateSlides() {
   for (var i = 0; i < slideEls.length; i++) {
     switch (i) {
@@ -196,8 +226,7 @@ function updateSlides() {
   triggerEnterEvent(curSlide);
 
   window.setTimeout(function() {
-    // Hide after the slide
-    disableSlideFrames(curSlide - 2);
+    disableSlideFrames(curSlide - 2); // Hide after the slide
   }, 301);
 
   enableSlideFrames(curSlide - 1);
@@ -210,6 +239,7 @@ function updateSlides() {
   updateHash();
 };
 
+// 현재 슬라이드 앨이멘트에 `.to-build` 가 붙어 있으면 **true**, 없으면 **false**.
 function buildNextItem() {
   var toBuild  = slideEls[curSlide].querySelectorAll('.to-build');
 
@@ -234,6 +264,7 @@ function prevSlide() {
   }
 };
 
+// 현재 슬라이드의 인덱스를 나타내는 `curSlide`를 업데이트하고, `updateSlides` 메소드를 호출.
 function nextSlide() {
   if (buildNextItem()) {
     return;
@@ -246,8 +277,7 @@ function nextSlide() {
   }
 };
 
-/* Slide events */
-
+// `onslideenter` event emit
 function triggerEnterEvent(no) {
   var el = getSlideEl(no);
   if (!el) {
@@ -266,6 +296,7 @@ function triggerEnterEvent(no) {
   el.dispatchEvent(evt);
 };
 
+// `onslideleave` event emit
 function triggerLeaveEvent(no) {
   var el = getSlideEl(no);
   if (!el) {
@@ -283,8 +314,6 @@ function triggerLeaveEvent(no) {
   
   el.dispatchEvent(evt);
 };
-
-/* Touch events */
 
 function handleTouchStart(event) {
   if (event.touches.length == 1) {
@@ -328,8 +357,7 @@ function cancelTouch() {
   document.body.removeEventListener('touchend', handleTouchEnd, true);  
 };
 
-/* Preloading frames */
-
+// 현재 슬라이드를 가져와 `iframe`이 있을 경우 disable.
 function disableSlideFrames(no) {
   var el = getSlideEl(no);
   if (!el) {
@@ -393,12 +421,11 @@ function setupInteraction() {
   el.addEventListener('click', nextSlide, false);
   document.querySelector('section.slides').appendChild(el);  
   
-  /* Swiping */
-  
+  // add listener for swiping
   document.body.addEventListener('touchstart', handleTouchStart, false);
 }
 
-/* ChromeVox support */
+// ### ChromeVox support
 
 function isChromeVoxActive() {
   if (typeof(cvox) == 'undefined') {
@@ -464,8 +491,7 @@ function speakPrevItem() {
   cvox.ChromeVoxUserCommands.finishNavCommand('');
 };
 
-/* Hash functions */
-
+// 현재 위치(`location`)로 부터 현재 슬라이드를 나타내는 hash 부분 ("#1")을 가져와 숫자부분만을 분리하고 `curSlide`를 업데이트 한다.
 function getCurSlideFromHash() {
   var slideNo = parseInt(location.hash.substr(1));
 
@@ -480,8 +506,7 @@ function updateHash() {
   location.replace('#' + (curSlide + 1));
 };
 
-/* Event listeners */
-
+// 키 이벤트를 받아 `nextSlide` 또는 `prevSlide` 메소드로 처리한다.
 function handleBodyKeyDown(event) {
   switch (event.keyCode) {
     case 39: // right arrow
@@ -523,8 +548,13 @@ function addEventListeners() {
   document.addEventListener('keydown', handleBodyKeyDown, false);  
 };
 
-/* Initialization */
-
+// `<pre>` 태그를 쿼리해, `noprettyprint` 가 없으면 아래와 같이 클래스에 
+// `prettyprint`를 추가한다.
+// 
+//     <pre class="prettyprint">
+// 
+// dom에 `prettyfy.js` 스크립트를 추가하고, 해당 dom이 로드되면 `prettyPrint`
+// 메소드를 실행해 syntax highlight.
 function addPrettify() {
   var els = document.querySelectorAll('pre');
   for (var i = 0, el; el = els[i]; i++) {
@@ -552,6 +582,7 @@ function addFontStyle() {
   document.body.appendChild(el);
 };
 
+// dom의 header에 `style.css`, `viewport`, `apple` 관련 앨리먼트들을 붙인다.
 function addGeneralStyle() {
   var el = document.createElement('link');
   el.rel = 'stylesheet';
@@ -571,6 +602,8 @@ function addGeneralStyle() {
   document.querySelector('head').appendChild(el);
 };
 
+// `slideEls`를 돌며 각 슬라이드마다
+// `.build > *`를 가져와 `to-build`를 붙인다.(markdown 빌드용??)
 function makeBuildLists() {
   for (var i = curSlide, slide; slide = slideEls[i]; i++) {
     var items = slide.querySelectorAll('.build > *');
@@ -582,12 +615,24 @@ function makeBuildLists() {
   }
 };
 
+// 최초 Dom이 로드되면 실행되는 함수.
+// 
+// 1. 전체 Dom에서 `section.slides > article`를 가져와 저장
+// 2. `iframe`을 세팅하고
+// 3. css 스타일을 적용하고(`link` 태그)
+// 4. prettify를 적용하고(`script` 태그)
+// 5. `keydown` 이벤트 리스너를 등록한다.
+// 6. 현재 슬라이드 Dom을 기준으로 전,후의 Dom에 `SLIDE_CLASSES` 를 업데이트 한다.
+// 7. 현재 슬라이드 좌우에 터치 이벤트를 받을 영역을 설정
+// 8. 빌드 리스트(!?) 를 만든다.
+// 
+// 이 이후에는 사용자 이벤트에 의해 `handleBodyKeyDown`, `handleTouchStart` 메소드로 연결됨
 function handleDomLoaded() {
   slideEls = document.querySelectorAll('section.slides > article');
 
   setupFrames();
 
-  //addFontStyle();
+  addFontStyle();
   addGeneralStyle();
   addPrettify();
   addEventListeners();
@@ -600,6 +645,10 @@ function handleDomLoaded() {
   document.body.classList.add('loaded');
 };
 
+// 제일 처음 실행되는 함수.
+// slide 번호를 업데이트 한다.
+// `window` 의 `_DCL` 을 확인하고, handleDomLoaded를 바로 실행하거나, 이벤트 리스너로 등록한다.
+// (`_DCL`이 뭐지??)
 function initialize() {
   getCurSlideFromHash();
 
@@ -614,7 +663,8 @@ function initialize() {
   }
 }
 
-// If ?debug exists then load the script relative instead of absolute
+// ### Initialization
+// Debug 모드일 경우 로컬의 `slides.js`를 가져오게 되어 있는데 난 항상 로컬로 돌리므로 그냥 진행하면 될 듯
 if (!window['_DEBUG'] && document.location.href.indexOf('?debug') !== -1) {
   document.addEventListener('DOMContentLoaded', function() {
     // Avoid missing the DomContentLoaded event
