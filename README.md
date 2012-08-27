@@ -1,5 +1,3 @@
-## 5 things
+## html5slide 분석용 repo
 
-HTML5-based slide deck software based on Google's 'HTML5 slides':
-
-[http://code.google.com/p/html5slides/](http://code.google.com/p/html5slides/)
+Google's [HTML5 slides](http://code.google.com/p/html5slides/) 분석용 repository
