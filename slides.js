@@ -31,7 +31,6 @@ var curSlide;
 // 
 // * `docuemnt` 가 선언되어 있지 **않고**,
 // * `<a></a>`를 하나 만들고 거기에 `classList` 가 선언되어 있지 **않은지** 확인
-//  * 사실 이건 왜 하는지 잘 모르겠음
 //  * 크롬 콘솔에서 `console.dir(document.createElement("a"))` 확인해 보면 `classList` 를 확인할 수 있다.
 if (typeof document !== "undefined" && !("classList" in document.createElement("a"))) {
 
@@ -53,7 +52,7 @@ var
     }
     return -1;
   }
-  // Vendors: please allow content code to instantiate DOMExceptions
+  /* Vendors: please allow content code to instantiate DOMExceptions */
   , DOMEx = function (type, message) {
     this.name = type;
     this.code = DOMException[type];
@@ -91,8 +90,8 @@ var
     return new ClassList(this);
   }
 ;
-// Most DOMException implementations don't allow calling DOMException's toString()
-// on non-DOMExceptions. Error's toString() is sufficient here.
+/* Most DOMException implementations don't allow calling DOMException's toString()
+ * on non-DOMExceptions. Error's toString() is sufficient here. */
 DOMEx[protoProp] = Error[protoProp];
 classListProto.item = function (i) {
   return this[i] || null;
@@ -240,6 +239,7 @@ function updateSlides() {
 };
 
 // 현재 슬라이드 앨이멘트에 `.to-build` 가 붙어 있으면 **true**, 없으면 **false**.
+// `.to-build` 가 되어 있으면 해당 앨리먼트에 대해 `speakAndSyncToNode` 를 실행
 function buildNextItem() {
   var toBuild  = slideEls[curSlide].querySelectorAll('.to-build');
 
@@ -256,6 +256,7 @@ function buildNextItem() {
   return true;
 };
 
+// 슬라이드를 앞으로 이동하기 위해서는 이 메소드 호출이 필요함
 function prevSlide() {
   if (curSlide > 0) {
     curSlide--;
@@ -265,6 +266,7 @@ function prevSlide() {
 };
 
 // 현재 슬라이드의 인덱스를 나타내는 `curSlide`를 업데이트하고, `updateSlides` 메소드를 호출.
+// 슬라이드를 뒤로 이동하기 위해서는 이 메소드 호출이 필요함
 function nextSlide() {
   if (buildNextItem()) {
     return;
@@ -315,6 +317,14 @@ function triggerLeaveEvent(no) {
   el.dispatchEvent(evt);
 };
 
+// `touchstart` 이벤트를 핸들링한다.
+// 이때 전달되는 `event` 오브젝트의 상세는 
+// 
+//      http://www.w3.org/TR/touch-events/#idl-def-TouchEvent
+// 
+// 여기서 확인 가능하다.
+// 
+// 음, 희안한게 터치 이벤트가 시작되면 `touchmove`, `touchend` 이벤트 리스너를 등록한다.
 function handleTouchStart(event) {
   if (event.touches.length == 1) {
     touchDX = 0;
@@ -352,6 +362,7 @@ function handleTouchEnd(event) {
   cancelTouch();
 };
 
+// `touchstart` 이벤트 핸들러에서 등록된 `touchmove`,`touchend` 이벤트를 해제한다.
 function cancelTouch() {
   document.body.removeEventListener('touchmove', handleTouchMove, true);
   document.body.removeEventListener('touchend', handleTouchEnd, true);  
@@ -370,6 +381,7 @@ function disableSlideFrames(no) {
   }
 };
 
+// 특정 슬라이드를 가져와 `iframe` 이 있으면 `enableFrame` 메소드를 호출한다.
 function enableSlideFrames(no) {
   var el = getSlideEl(no);
   if (!el) {
@@ -386,6 +398,7 @@ function disableFrame(frame) {
   frame.src = 'about:blank';
 };
 
+// `iframe`에 설정된 소스를 로드한다.
 function enableFrame(frame) {
   var src = frame._src;
 
@@ -406,8 +419,9 @@ function setupFrames() {
   enableSlideFrames(curSlide + 2);  
 };
 
+// `prev-slide-area`, `next-slide-area`에 클릭이벤트 리스너를 붙인다.
+// DOM body에 `touchstart` 이벤트 리스너를 붙인다.
 function setupInteraction() {
-  /* Clicking and tapping */
   
   var el = document.createElement('div');
   el.className = 'slide-area';
@@ -421,8 +435,7 @@ function setupInteraction() {
   el.addEventListener('click', nextSlide, false);
   document.querySelector('section.slides').appendChild(el);  
   
-  // add listener for swiping
-  document.body.addEventListener('touchstart', handleTouchStart, false);
+  document.body.addEventListener('touchstart', handleTouchStart, false); // add listener for swiping
 }
 
 // ### ChromeVox support
@@ -603,7 +616,7 @@ function addGeneralStyle() {
 };
 
 // `slideEls`를 돌며 각 슬라이드마다
-// `.build > *`를 가져와 `to-build`를 붙인다.(markdown 빌드용??)
+// `.build > *`를 가져와 `to-build`를 붙인다.
 function makeBuildLists() {
   for (var i = curSlide, slide; slide = slideEls[i]; i++) {
     var items = slide.querySelectorAll('.build > *');
@@ -624,7 +637,7 @@ function makeBuildLists() {
 // 5. `keydown` 이벤트 리스너를 등록한다.
 // 6. 현재 슬라이드 Dom을 기준으로 전,후의 Dom에 `SLIDE_CLASSES` 를 업데이트 한다.
 // 7. 현재 슬라이드 좌우에 터치 이벤트를 받을 영역을 설정
-// 8. 빌드 리스트(!?) 를 만든다.
+// 8. `speakAndSyncToNode` 실행을 위해 빌드 리스트 를 만든다.
 // 
 // 이 이후에는 사용자 이벤트에 의해 `handleBodyKeyDown`, `handleTouchStart` 메소드로 연결됨
 function handleDomLoaded() {
