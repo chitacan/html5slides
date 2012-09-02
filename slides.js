@@ -1,3 +1,5 @@
+// [HTML5 Slides](http://code.google.com/p/html5slides/) 프로젝트를 [docco](https://github.com/jashkenas/docco)로 분석한 페이지.
+// [initialize](slides.html#section-29)부터 시작!!
 /*
   Google HTML5 slides template
 
@@ -661,7 +663,7 @@ function handleDomLoaded() {
 // 제일 처음 실행되는 함수.
 // slide 번호를 업데이트 한다.
 // `window` 의 `_DCL` 을 확인하고, handleDomLoaded를 바로 실행하거나, 이벤트 리스너로 등록한다.
-// (`_DCL`이 뭐지??)
+// (`_DCL`은 바로 아래 블록에서 Debug 모드일 때 true로 세팅하는 놈)
 function initialize() {
   getCurSlideFromHash();
 
@@ -677,11 +679,11 @@ function initialize() {
 }
 
 // ### Initialization
-// Debug 모드일 경우 로컬의 `slides.js`를 가져오게 되어 있는데 난 항상 로컬로 돌리므로 그냥 진행하면 될 듯
+// Debug 모드일 경우 로컬의 `slides.js`를 가져오게 되어 있는데 난 항상 로컬로 돌리므로 그냥 진행하면 될 듯.
+// `initialize` 메소드를 호출한다.
 if (!window['_DEBUG'] && document.location.href.indexOf('?debug') !== -1) {
   document.addEventListener('DOMContentLoaded', function() {
-    // Avoid missing the DomContentLoaded event
-    window['_DCL'] = true
+    window['_DCL'] = true // Avoid missing the DomContentLoaded event
   }, false);
 
   window['_DEBUG'] = true;
@@ -690,9 +692,7 @@ if (!window['_DEBUG'] && document.location.href.indexOf('?debug') !== -1) {
   script.src = '../slides.js';
   var s = document.getElementsByTagName('script')[0];
   s.parentNode.insertBefore(script, s);
-
-  // Remove this script
-  s.parentNode.removeChild(s);
+  s.parentNode.removeChild(s); // Remove this script
 } else {
   initialize();
 }
