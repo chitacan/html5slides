@@ -2,7 +2,7 @@
 
 Google's [HTML5 slides](http://code.google.com/p/html5slides/) 분석용 repository
 
-see [Documentation](file:///Users/chitacan/Documents/workspace/lakumi/examples/html5slides/docs/slides.html)
+see [Documentation](http://chitacan.github.com/html5slides/)
 
 ### TODO
 
