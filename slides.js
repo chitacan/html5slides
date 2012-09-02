@@ -1,5 +1,5 @@
 // [HTML5 Slides](http://code.google.com/p/html5slides/) 프로젝트를 [docco](https://github.com/jashkenas/docco)로 분석한 페이지.
-// [initialize](slides.html#section-29)부터 시작!!
+// [initialize](#section-29)부터 시작!!
 /*
   Google HTML5 slides template
 
